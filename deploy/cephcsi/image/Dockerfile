@@ -40,7 +40,6 @@ ENV GOROOT=${GOROOT} \
     GOPATH=/go \
     CGO_ENABLED=1 \
     GOEXPERIMENT=boringcrypto \
-    -ldflags="-linkmode=external -extldflags=-static" \
     GIT_COMMIT="${GIT_COMMIT}" \
     ENV_CSI_IMAGE_VERSION="${CSI_IMAGE_VERSION}" \
     ENV_CSI_IMAGE_NAME="${CSI_IMAGE_NAME}" \
