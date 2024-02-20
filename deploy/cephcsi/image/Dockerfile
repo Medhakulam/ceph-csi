@@ -4,8 +4,7 @@ ARG BASE_IMAGE
 
 FROM ${BASE_IMAGE} as updated_base
 
-RUN dnf -y update \
-       && dnf clean all \
+RUN dnf clean all \
        && rm -rf /var/cache/yum
 
 FROM updated_base as builder
@@ -17,25 +16,19 @@ ARG CSI_IMAGE_VERSION=canary
 ARG GO_ARCH
 ARG SRC_DIR
 ARG GIT_COMMIT
-ARG GOROOT=/usr/local/go
+ARG GOROOT=/usr/lib/golang
 
 COPY build.env /
-
+RUN dnf install -y go-toolset
 RUN source /build.env && \
-    ( test -n "${GO_ARCH}" && exit 0; echo -e "\n\nMissing GO_ARCH argument for building image, install Golang or run: make image-cephcsi GOARCH=amd64\n\n"; exit 1 ) && \
-    mkdir -p ${GOROOT} && \
-    curl https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-${GO_ARCH}.tar.gz | tar xzf - -C ${GOROOT} --strip-components=1
+    ( test -n "${GO_ARCH}" && exit 0; echo -e "\n\nMissing GO_ARCH argument for building image, install Golang or run: make image-cephcsi GOARCH=amd64\n\n"; exit 1 )
 
 # test if the downloaded version of Golang works (different arch?)
 RUN ${GOROOT}/bin/go version && ${GOROOT}/bin/go env
 
 # TODO: remove the following cmd, when issue
 # https://github.com/ceph/ceph-container/issues/2034 is fixed.
-RUN dnf config-manager --disable \
-    tcmu-runner,tcmu-runner-source,tcmu-runner-noarch || true
-
 RUN dnf -y install --nodocs \
-	librados-devel librbd-devel \
 	/usr/bin/cc \
 	make \
 	git \
@@ -46,6 +39,7 @@ RUN dnf -y install --nodocs \
 ENV GOROOT=${GOROOT} \
     GOPATH=/go \
     CGO_ENABLED=1 \
+    GOEXPERIMENT=boringcrypto \
     GIT_COMMIT="${GIT_COMMIT}" \
     ENV_CSI_IMAGE_VERSION="${CSI_IMAGE_VERSION}" \
     ENV_CSI_IMAGE_NAME="${CSI_IMAGE_NAME}" \
